@@ -1,0 +1,30 @@
+{
+  "name": "pragatidesk",
+  "version": "1.0.0",
+  "description": "PragatiDesk - Agile Project & Task Workflow Tracking System for DoIT&C",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "build": "npm run build:server && npm run build:client",
+    "deploy:firebase": "npm run build:client && npx firebase-tools deploy --only hosting",
+    "test:workflow": "cd server && npx ts-node-dev test/workflow.test.ts",
+    "db:push": "cd server && npm run db:push",
+    "db:seed": "cd server && npm run db:seed"
+  },
+  "keywords": [
+    "jira",
+    "workflow",
+    "project-management",
+    "task-tracking",
+    "doitc",
+    "pragati"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
