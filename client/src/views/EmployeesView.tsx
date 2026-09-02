@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { SystemRoleBadge } from '../components/common/Badge';
 import { DesignationMaster, SectionMaster, OfficeMaster, User } from '../types';
 import {
@@ -37,6 +38,7 @@ const SSO_REGEX = /^[A-Za-z0-9_\-\.]{3,30}$/;
 
 export const EmployeesView: React.FC = () => {
   const { user, hasPermission } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [employees, setEmployees] = useState<User[]>([]);
   const [designations, setDesignations] = useState<DesignationMaster[]>([]);
   const [sections, setSections] = useState<SectionMaster[]>([]);
@@ -168,6 +170,8 @@ export const EmployeesView: React.FC = () => {
         pass: res.generatedDefaultPassword || 'DoITC@2026',
       });
 
+      showSuccess(`Employee ${res.name} registered successfully!`, 'Registration Successful');
+
       setName('');
       setEmail('');
       setSsoId('');
@@ -177,7 +181,9 @@ export const EmployeesView: React.FC = () => {
       setShowRegisterModal(false);
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to register employee');
+      const msg = err.message || 'Failed to register employee';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -212,11 +218,15 @@ export const EmployeesView: React.FC = () => {
         isActive: editingUser.isActive,
       });
 
-      setSuccessMessage(`Employee profile for ${editingUser.name} updated successfully.`);
+      const successText = `Employee profile for ${editingUser.name} updated successfully.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Profile Updated');
       setEditingUser(null);
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update employee profile.');
+      const msg = err.message || 'Failed to update employee profile.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,13 +243,17 @@ export const EmployeesView: React.FC = () => {
         targetSectionId,
         remark: transferRemark.trim() || undefined,
       });
-      setSuccessMessage(`Employee transfer initiated for '${transferingUser.name}'. Pending recipient acceptance.`);
+      const successText = `Employee transfer initiated for '${transferingUser.name}'. Pending recipient acceptance.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Transfer Initiated');
       setTransferingUser(null);
       setTargetSectionId('');
       setTransferRemark('');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to initiate employee transfer.');
+      const msg = err.message || 'Failed to initiate employee transfer.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -251,10 +265,14 @@ export const EmployeesView: React.FC = () => {
     setErrorMessage(null);
     try {
       await api.acceptEmployeeTransfer(emp.id);
-      setSuccessMessage(`Employee '${emp.name}' transfer accepted. Added to your section.`);
+      const successText = `Employee '${emp.name}' transfer accepted. Added to your section.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Transfer Accepted');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to accept employee transfer.');
+      const msg = err.message || 'Failed to accept employee transfer.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -267,10 +285,14 @@ export const EmployeesView: React.FC = () => {
     setErrorMessage(null);
     try {
       await api.rejectEmployeeTransfer(emp.id);
-      setSuccessMessage(`Employee transfer request for '${emp.name}' has been cancelled.`);
+      const successText = `Employee transfer request for '${emp.name}' has been cancelled.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Transfer Cancelled');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to cancel transfer request.');
+      const msg = err.message || 'Failed to cancel transfer request.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -283,10 +305,14 @@ export const EmployeesView: React.FC = () => {
     setErrorMessage(null);
     try {
       await api.rejectEmployeeTransfer(emp.id);
-      setSuccessMessage(`Employee transfer request for '${emp.name}' was declined.`);
+      const successText = `Employee transfer request for '${emp.name}' was declined.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Transfer Declined');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to decline transfer.');
+      const msg = err.message || 'Failed to decline transfer.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -296,10 +322,14 @@ export const EmployeesView: React.FC = () => {
   const handleToggleStatus = async (emp: User) => {
     try {
       await api.updateUser(emp.id, { isActive: !emp.isActive });
-      setSuccessMessage(`Employee account status changed to ${!emp.isActive ? 'Active' : 'Deactivated'}.`);
+      const successText = `Employee account status changed to ${!emp.isActive ? 'Active' : 'Deactivated'}.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Status Changed');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to toggle employee status.');
+      const msg = err.message || 'Failed to toggle employee status.';
+      setErrorMessage(msg);
+      showError(msg);
     }
   };
 
@@ -321,12 +351,16 @@ export const EmployeesView: React.FC = () => {
         pass: res.generatedDefaultPassword,
       });
 
-      setSuccessMessage(`Password for ${resettingUser.name} (${resettingUser.ssoId}) has been reset successfully.`);
+      const successText = `Password for ${resettingUser.name} (${resettingUser.ssoId}) has been reset successfully.`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Password Reset');
       setResettingUser(null);
       setResetCustomPassword('');
       await fetchEmployeesData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to reset employee password.');
+      const msg = err.message || 'Failed to reset employee password.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsResettingPass(false);
     }
