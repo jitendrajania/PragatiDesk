@@ -71,24 +71,22 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
       if (isOfficeSuperAdmin) {
         andConditions.push({ project: { officeId: req.user?.officeId } });
       } else if (isGroupHead) {
-        // Group Head sees tasks in their projects, projects where they are a member, or tasks they created/assigned/disposed
+        // Group Head sees all tasks in their projects, or tasks they created/assigned/disposed
         andConditions.push({
           OR: [
             { project: { groupHeadId: req.user?.id } },
-            { project: { members: { some: { userId: req.user?.id } } } },
             { createdById: req.user?.id },
             { currentAssigneeId: req.user?.id },
             { disposedById: req.user?.id },
           ],
         });
       } else {
-        // Regular Employee sees tasks assigned to them, created by them, disposed by them, or in their projects
+        // Regular Employee must ONLY see their own tasks (assigned to them, created by them, or disposed by them)
         andConditions.push({
           OR: [
             { currentAssigneeId: req.user?.id },
             { createdById: req.user?.id },
             { disposedById: req.user?.id },
-            { project: { members: { some: { userId: req.user?.id } } } },
           ],
         });
       }
