@@ -480,8 +480,9 @@ router.get('/personas', async (req: Request, res: Response): Promise<void> => {
     });
 
     res.json(users.map(formatUserResponse));
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch persona list' });
+  } catch (error: any) {
+    console.error('Error fetching personas:', error);
+    res.status(500).json({ error: 'Failed to fetch persona list', details: error?.message || String(error) });
   }
 });
 
