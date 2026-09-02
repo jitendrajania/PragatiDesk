@@ -252,8 +252,8 @@ router.post('/send-otp', async (req: Request, res: Response): Promise<void> => {
 
     console.log(`📧 [EMAIL OTP DISPATCH] Sent OTP '${otp}' to ${cleanEmail}`);
 
-    // Trigger Automated Email Dispatch
-    sendOtpEmail(cleanEmail, otp, user.name).catch((err) => console.error('⚠️ Failed to dispatch OTP email:', err));
+    // Trigger Automated Email Dispatch (delivers to registered email and personal gmail if available)
+    sendOtpEmail(cleanEmail, otp, user.name, user.gmailId).catch((err) => console.error('⚠️ Failed to dispatch OTP email:', err));
 
     // Mask email for security display (e.g. vi****@doitc.gov.in)
     const maskedEmail = cleanEmail.replace(
