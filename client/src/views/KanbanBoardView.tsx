@@ -8,6 +8,7 @@ import {
   Plus,
   User as UserIcon,
   Paperclip,
+  RotateCcw,
 } from 'lucide-react';
 
 interface KanbanBoardViewProps {
@@ -16,6 +17,7 @@ interface KanbanBoardViewProps {
   searchQuery: string;
   onSelectTask: (taskId: string) => void;
   onOpenCreateTask: () => void;
+  refreshTrigger?: number;
 }
 
 const COLUMNS: { id: TaskStatus; label: string; bg: string; border: string; countBg: string }[] = [
@@ -61,14 +63,17 @@ export const KanbanBoardView: React.FC<KanbanBoardViewProps> = ({
   searchQuery,
   onSelectTask,
   onOpenCreateTask,
+  refreshTrigger,
 }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filterMyTasks, setFilterMyTasks] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchTasks = async () => {
+    setIsLoading(true);
     try {
       const data = await api.getTasks({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
@@ -79,12 +84,14 @@ export const KanbanBoardView: React.FC<KanbanBoardViewProps> = ({
       setTasks(data);
     } catch (err) {
       console.error('Failed to load tasks for Kanban:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchTasks();
-  }, [selectedProjectId, filterCategory, filterPriority, searchQuery]);
+  }, [selectedProjectId, filterCategory, filterPriority, searchQuery, refreshTrigger]);
 
   // Client side "My Tasks" filter for instant feedback
   const displayedTasks = filterMyTasks
@@ -111,6 +118,17 @@ export const KanbanBoardView: React.FC<KanbanBoardViewProps> = ({
 
         {/* Quick Filters */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Refresh Button */}
+          <button
+            onClick={() => fetchTasks()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors shadow-xs"
+            title="Reload live Kanban board"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin text-brand-600' : ''}`} />
+            <span>{isLoading ? 'Fetching...' : 'Refresh'}</span>
+          </button>
+
           {/* My Tasks Toggle */}
           <button
             onClick={() => setFilterMyTasks(!filterMyTasks)}
