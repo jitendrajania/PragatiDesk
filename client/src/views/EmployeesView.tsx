@@ -378,23 +378,37 @@ export const EmployeesView: React.FC = () => {
           </div>
         </div>
 
-        {canEdit && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setName('');
-              setEmail('');
-              setSsoId('');
-              setPhone('');
-              setGmailId('');
-              setCustomPassword('');
-              setShowRegisterModal(true);
-            }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all"
+            type="button"
+            onClick={() => fetchEmployeesData()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+            title="Refresh employee directory"
           >
-            <UserPlus className="w-4 h-4" />
-            Register New Employee
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-brand-600' : ''}`} />
+            Refresh
           </button>
-        )}
+
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setName('');
+                setEmail('');
+                setSsoId('');
+                setPhone('');
+                setGmailId('');
+                setCustomPassword('');
+                setShowRegisterModal(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              Register New Employee
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Alerts */}
