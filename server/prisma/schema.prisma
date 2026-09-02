@@ -1,0 +1,230 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model OfficeMaster {
+  id        String          @id @default(uuid())
+  name      String          @unique
+  code      String          @unique
+  district  String?
+  address   String?
+  isActive  Boolean         @default(true)
+  sections  SectionMaster[]
+  users     User[]
+  projects  Project[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model SectionMaster {
+  id                  String       @id @default(uuid())
+  name                String
+  code                String
+  officeId            String
+  office              OfficeMaster @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  isActive            Boolean      @default(true)
+  users               User[]
+  transferTargetUsers User[]       @relation("UserTransferTargetSection")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@unique([officeId, name])
+  @@unique([officeId, code])
+}
+
+model DesignationMaster {
+  id        String   @id @default(uuid())
+  title     String   @unique
+  cadre     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoleMaster {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  code            String   @unique
+  description     String?
+  isSystem        Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  permissionsJson String   @default("[]") // JSON Array of { module: string, canView: boolean, canEdit: boolean }
+  users           User[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OtpRecord {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id                        String           @id @default(uuid())
+  email                     String           @unique
+  passwordHash              String
+  name                      String
+  designation               String
+  ssoId                     String           @unique
+  phone                     String?          @unique
+  gmailId                   String?          @unique
+  officeId                  String?
+  office                    OfficeMaster?    @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  officeName                String?          @default("DoIT&C Secretariat, Jaipur (HQ)")
+  sectionId                 String?
+  section                   SectionMaster?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  sectionName               String?
+  systemRole                String           @default("EMPLOYEE") // SUPER_ADMIN, OFFICE_SUPER_ADMIN, GROUP_HEAD, EMPLOYEE or custom code
+  roleId                    String?
+  customRole                RoleMaster?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  isActive                  Boolean          @default(true)
+  mustChangePassword        Boolean          @default(false)
+  createdById               String?
+  createdBy                 User?            @relation("UserHierarchy", fields: [createdById], references: [id])
+  subordinates              User[]           @relation("UserHierarchy")
+  managedProjects           Project[]        @relation("GroupHeadProjects")
+  transferredProjects       Project[]        @relation("ProjectTransferTarget")
+  projectMemberships        ProjectMember[]
+  createdTasks              Task[]           @relation("TaskCreator")
+  assignedTasks             Task[]           @relation("TaskAssignee")
+  disposedTasks             Task[]           @relation("TaskDisposer")
+  activityLogs              TaskActivity[]   @relation("ActivityActor")
+  followUpReports           FollowUpReport[] @relation("ReportAuthor")
+  
+  // Employee Transfer Handshake (Sender Cancel & Recipient Accept/Decline)
+  transferStatus            String           @default("NONE") // NONE, PENDING_TRANSFER, TRANSFERRED
+  transferToSectionId       String?
+  transferToSection         SectionMaster?   @relation("UserTransferTargetSection", fields: [transferToSectionId], references: [id], onDelete: SetNull)
+  transferToGroupHeadId     String?
+  transferToGroupHead       User?            @relation("UserTransferTargetGroupHead", fields: [transferToGroupHeadId], references: [id], onDelete: SetNull)
+  transferRemark            String?
+  transferInitiatedAt       DateTime?
+  transferInitiatedById     String?
+  transferInitiatedBy       User?            @relation("UserTransferInitiator", fields: [transferInitiatedById], references: [id], onDelete: SetNull)
+  initiatedUserTransfers    User[]           @relation("UserTransferInitiator")
+  incomingUserTransfers     User[]           @relation("UserTransferTargetGroupHead")
+  
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+}
+
+model Project {
+  id                     String          @id @default(uuid())
+  projectCode            String          @unique
+  name                   String
+  description            String?
+  officeId               String?
+  office                 OfficeMaster?   @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  officeName             String?
+  groupHeadId            String
+  groupHead              User            @relation("GroupHeadProjects", fields: [groupHeadId], references: [id])
+  status                 String          @default("ACTIVE") // ACTIVE, ON_HOLD, COMPLETED
+  transferStatus         String          @default("NONE") // NONE, PENDING_TRANSFER, TRANSFERRED
+  transferToGroupHeadId  String?
+  transferToGroupHead    User?           @relation("ProjectTransferTarget", fields: [transferToGroupHeadId], references: [id], onDelete: SetNull)
+  transferRemark         String?
+  transferInitiatedAt    DateTime?
+  members                ProjectMember[]
+  tasks                  Task[]
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rolesJson String   @default("[\"RESOLVING_EMPLOYEE\"]") // Array of: TO_DO_LISTING_OPERATOR, RESOLVING_EMPLOYEE, REVIEW_OFFICER, ADMIN, DEVELOPER, QA
+  joinedAt  DateTime @default(now())
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id                     String           @id @default(uuid())
+  taskNumber             String           @unique // e.g. PRG-1001
+  referenceNumber        String?          // Official letter / General reference no
+  rajKajNumber           String?          // RajKaj Dak / File Dispatch No (e.g. RJ-DK/2026/89421)
+  issueNumber            String?          // Issue / Grievance Tracking No (e.g. ISSUE-4091)
+  referenceDate          DateTime?        // Email / Letter Dispatch Date
+  subject                String?
+  description            String?
+  letterEmailContent     String?
+  category               String           @default("GENERAL_TASK") // OFFICIAL_LETTER, TECHNICAL_ISSUE, SERVICE_REQUEST, GENERAL_TASK, BUG, FEATURE
+  priority               String           @default("MEDIUM") // CRITICAL, HIGH, MEDIUM, LOW
+  status                 String           @default("OPEN") // OPEN, IN_PROGRESS, TRANSFERRED, REVERTED, DISPOSED, CLOSED
+  
+  projectId              String
+  project                Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdById            String
+  createdBy              User             @relation("TaskCreator", fields: [createdById], references: [id])
+  
+  currentAssigneeId      String?
+  currentAssignee        User?            @relation("TaskAssignee", fields: [currentAssigneeId], references: [id])
+  
+  disposedById           String?
+  disposedBy             User?            @relation("TaskDisposer", fields: [disposedById], references: [id])
+  disposedAt             DateTime?
+  
+  allocatedDurationValue Int?
+  allocatedDurationUnit  String?          @default("DAYS") // HOURS, DAYS
+  estimatedCompletionAt DateTime?
+  
+  activities             TaskActivity[]
+  attachments            TaskAttachment[]
+  followUpReports        FollowUpReport[]
+  
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model TaskActivity {
+  id           String           @id @default(uuid())
+  taskId       String
+  task         Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actionType   String           // CREATED, TRANSFERRED, REVERTED, DISPOSED, REOPENED, UPDATED, COMMENTED, PRIORITY_CHANGED
+  actorId      String
+  actor        User             @relation("ActivityActor", fields: [actorId], references: [id])
+  targetUserId String?
+  remark       String
+  attachments  TaskAttachment[]
+  createdAt    DateTime         @default(now())
+}
+
+model TaskAttachment {
+  id         String        @id @default(uuid())
+  taskId     String
+  task       Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  activityId String?
+  activity   TaskActivity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  fileName   String
+  filePath   String
+  fileType   String
+  fileSize   Int
+  uploadedAt DateTime      @default(now())
+}
+
+model FollowUpReport {
+  id               String    @id @default(uuid())
+  taskId           String
+  task             Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reportedById     String
+  reportedBy       User      @relation("ReportAuthor", fields: [reportedById], references: [id])
+  status           String    // Action Pending at External Dept, Signature Obtained, Under Review, Dispatched, Closed
+  remarks          String
+  nextFollowUpDate DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
