@@ -11,19 +11,7 @@ async function main() {
     console.log('🌱 Loading live production snapshot from production_seed.json...');
     const data = JSON.parse(fs.readFileSync(seedJsonPath, 'utf-8'));
 
-    // Clear existing records in foreign key order
-    await prisma.followUpReport.deleteMany({});
-    await prisma.taskAttachment.deleteMany({});
-    await prisma.taskActivity.deleteMany({});
-    await prisma.task.deleteMany({});
-    await prisma.projectMember.deleteMany({});
-    await prisma.project.deleteMany({});
-    await prisma.otpRecord.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.roleMaster.deleteMany({});
-    await prisma.designationMaster.deleteMany({});
-    await prisma.sectionMaster.deleteMany({});
-    await prisma.officeMaster.deleteMany({});
+    // Safe seed: Upsert records without deleting user tasks or operational data
 
     // 1. Offices
     for (const off of data.offices || []) {
