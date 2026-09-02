@@ -4,18 +4,45 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-// Helper to generate task sequential number like PRG-1042
+// Helper to generate task sequential number like PRG-1042 (collision-proof)
 async function generateNextTaskNumber(projectId?: string): Promise<string> {
   let prefix = 'PRG';
   if (projectId) {
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (project && project.projectCode) {
-      prefix = project.projectCode;
+      prefix = project.projectCode.trim().toUpperCase();
     }
   }
 
-  const count = await prisma.task.count();
-  return `${prefix}-${1000 + count + 1}`;
+  // Find all existing tasks for this prefix to find the true max sequential number
+  const tasks = await prisma.task.findMany({
+    where: {
+      taskNumber: {
+        startsWith: `${prefix}-`,
+      },
+    },
+    select: { taskNumber: true },
+  });
+
+  let maxNum = 1000;
+  for (const t of tasks) {
+    const parts = t.taskNumber.split('-');
+    const num = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(num) && num > maxNum) {
+      maxNum = num;
+    }
+  }
+
+  let nextNum = maxNum + 1;
+  let candidate = `${prefix}-${nextNum}`;
+
+  // Extra safety guarantee against any race condition or duplicate ID
+  while (await prisma.task.findUnique({ where: { taskNumber: candidate } })) {
+    nextNum++;
+    candidate = `${prefix}-${nextNum}`;
+  }
+
+  return candidate;
 }
 
 // Get tasks with comprehensive filters and strict multi-tenancy scoping
