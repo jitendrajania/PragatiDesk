@@ -1,21 +1,22 @@
 import nodemailer from 'nodemailer';
 
 // Email Configuration from Environment Variables
-const SMTP_HOST = process.env.SMTP_HOST || '';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || '"PragatiDesk (DoIT&C Rajasthan)" <noreply.pragatidesk@doitc.gov.in>';
-const PORTAL_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const SMTP_HOST = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
+const SMTP_USER = (process.env.SMTP_USER || 'jitendra.jania@gmail.com').trim();
+const SMTP_PASS = (process.env.SMTP_PASS || 'ubuhieblqedxfkdt').replace(/\s+/g, '').replace(/["']/g, '').trim();
+const SMTP_FROM = process.env.SMTP_FROM || '"PragatiDesk (DoIT&C Rajasthan)" <jitendra.jania@gmail.com>';
+const PORTAL_URL = process.env.CLIENT_URL || 'https://manaat.com';
 
 let transporter: nodemailer.Transporter | null = null;
 
 // Initialize Transporter dynamically
 function getTransporter(): nodemailer.Transporter | null {
-  const host = process.env.SMTP_HOST || SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const user = process.env.SMTP_USER || SMTP_USER;
-  const pass = process.env.SMTP_PASS || SMTP_PASS;
+  const host = (process.env.SMTP_HOST || SMTP_HOST).trim();
+  const port = parseInt(process.env.SMTP_PORT || String(SMTP_PORT), 10);
+  const user = (process.env.SMTP_USER || SMTP_USER).trim();
+  const rawPass = process.env.SMTP_PASS || SMTP_PASS;
+  const pass = rawPass.replace(/\s+/g, '').replace(/["']/g, '').trim();
 
   if (!pass || !user) {
     return null;
@@ -286,7 +287,17 @@ export async function sendProfileUpdatedEmail(
 /**
  * 3. Send OTP Email for Password Recovery
  */
-export async function sendOtpEmail(email: string, otp: string, userName?: string): Promise<boolean> {
+export async function sendOtpEmail(
+  email: string,
+  otp: string,
+  userName?: string,
+  gmailId?: string | null
+): Promise<boolean> {
+  const recipients = [email];
+  if (gmailId && gmailId.toLowerCase() !== email.toLowerCase()) {
+    recipients.push(gmailId);
+  }
+
   const subject = `PragatiDesk — Password Reset Verification Code: ${otp}`;
 
   const htmlContent = `
