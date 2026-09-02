@@ -18,6 +18,9 @@ import {
   Save,
 } from 'lucide-react';
 
+import { api } from '../../services/api';
+import { DesignationMaster } from '../../types';
+
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +40,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   const [phone, setPhone] = useState('');
   const [gmailId, setGmailId] = useState('');
   const [designation, setDesignation] = useState('');
+  const [designations, setDesignations] = useState<DesignationMaster[]>([]);
 
   // Password Form State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -63,6 +67,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
       setConfirmPassword('');
       setErrorMessage(null);
       setSuccessMessage(null);
+
+      // Load active designations configured by Super Admin
+      api.getDesignations()
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setDesignations(data.filter((d) => d.isActive !== false));
+          }
+        })
+        .catch((err) => console.error('Failed to load designations in profile modal:', err));
     }
   }, [user, isOpen]);
 
@@ -268,12 +281,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Official Designation</label>
-                <input
-                  type="text"
+                <select
                   value={designation}
                   onChange={(e) => setDesignation(e.target.value)}
-                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500"
-                />
+                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 font-medium text-slate-800 cursor-pointer"
+                >
+                  <option value="">-- Select Designation --</option>
+                  {designations.map((des) => (
+                    <option key={des.id} value={des.title}>
+                      {des.title} {des.cadre ? `(${des.cadre})` : ''}
+                    </option>
+                  ))}
+                  {designation && !designations.some((d) => d.title === designation) && (
+                    <option value={designation}>{designation}</option>
+                  )}
+                </select>
               </div>
             </div>
 
