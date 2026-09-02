@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Task, AssigneeOption } from '../../types';
+import { useToast } from '../../context/ToastContext';
 import {
   X,
   ArrowRightLeft,
@@ -23,12 +24,14 @@ export const TransferTaskModal: React.FC<TransferTaskModalProps> = ({
   task,
   onTaskUpdated,
 }) => {
+  const { showSuccess, showError } = useToast();
   const [targetUserId, setTargetUserId] = useState('');
   const [remark, setRemark] = useState('');
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (task.projectId) {
@@ -84,10 +87,19 @@ export const TransferTaskModal: React.FC<TransferTaskModalProps> = ({
         attachments: uploadedAttachments,
       });
 
+      const successText = `Task [${task.taskNumber}] transferred successfully!`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Task Transferred');
+
       onTaskUpdated();
-      onClose();
+      setTimeout(() => {
+        setSuccessMessage(null);
+        onClose();
+      }, 700);
     } catch (err: any) {
-      setError(err.message || 'Failed to transfer task');
+      const msg = err.message || 'Failed to transfer task';
+      setError(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,8 +124,15 @@ export const TransferTaskModal: React.FC<TransferTaskModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
+        {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {successMessage && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex items-center gap-2 font-bold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
