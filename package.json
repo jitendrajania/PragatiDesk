@@ -1,35 +1,30 @@
 {
-  "name": "client",
-  "private": true,
+  "name": "pragatidesk",
   "version": "1.0.0",
-  "type": "module",
+  "description": "PragatiDesk - Agile Project & Task Workflow Tracking System for DoIT&C",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "build": "npm run build:server && npm run build:client",
+    "deploy:firebase": "npm run build:client && npx firebase-tools deploy --only hosting",
+    "test:workflow": "cd server && npx ts-node-dev test/workflow.test.ts",
+    "db:push": "cd server && npm run db:push",
+    "db:seed": "cd server && npm run db:seed"
   },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "firebase": "^12.18.0",
-    "jspdf": "^4.2.1",
-    "jspdf-autotable": "^5.0.8",
-    "lucide-react": "^1.16.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "recharts": "^2.15.1",
-    "tailwind-merge": "^3.0.1",
-    "xlsx": "^0.18.5"
-  },
+  "keywords": [
+    "jira",
+    "workflow",
+    "project-management",
+    "task-tracking",
+    "doitc",
+    "pragati"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.5.2",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3",
-    "vite": "^6.1.0"
+    "concurrently": "^9.1.2"
   }
 }
