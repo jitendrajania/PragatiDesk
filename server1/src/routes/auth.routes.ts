@@ -256,10 +256,7 @@ router.post('/send-otp', async (req: Request, res: Response): Promise<void> => {
     sendOtpEmail(cleanEmail, otp, user.name).catch((err) => console.error('⚠️ Failed to dispatch OTP email:', err));
 
     // Mask email for security display (e.g. vi****@doitc.gov.in)
-  const maskedEmail = cleanEmail.replace(
-  /^(.)(.*)(@.*)$/,
-  (_m: string, first: string, middle: string, domain: string) => first + '*'.repeat(Math.max(middle.length, 3)) + domain
-);
+    const maskedEmail = cleanEmail.replace(/^(.)(.*)(@.*)$/, (_m, first, middle, domain) => first + '*'.repeat(Math.max(middle.length, 3)) + domain);
 
     res.json({
       success: true,
