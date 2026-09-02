@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar, ActiveTab } from './components/layout/Sidebar';
 import { DashboardView } from './views/DashboardView';
@@ -42,6 +43,8 @@ const MainApp: React.FC = () => {
     isLoading,
     hasPermission,
   } = useAuth();
+
+  const { showSuccess, showError } = useToast();
 
   // Navigation & Filtering State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -150,10 +153,12 @@ const MainApp: React.FC = () => {
     try {
       const res = await sendOtp(otpEmail);
       setOtpSentMessage(res.message);
-      // Clean OTP state: OTP is only sent to the user's email inbox
       setOtpCode('');
+      showSuccess(res.message, 'OTP Code Dispatched');
     } catch (err: any) {
-      setOtpError(err.message || 'Failed to dispatch verification code');
+      const msg = err.message || 'Failed to dispatch verification code';
+      setOtpError(msg);
+      showError(msg);
     } finally {
       setIsSendingOtp(false);
     }
@@ -165,9 +170,12 @@ const MainApp: React.FC = () => {
     setIsResettingPassword(true);
     try {
       await verifyOtpAndResetPassword(otpEmail, otpCode, otpNewPassword);
+      showSuccess('Your password has been reset successfully! Please log in with your new password.', 'Password Reset Success');
       setShowForgotPasswordModal(false);
     } catch (err: any) {
-      setOtpError(err.message || 'Failed to reset password');
+      const msg = err.message || 'Failed to reset password';
+      setOtpError(msg);
+      showError(msg);
     } finally {
       setIsResettingPassword(false);
     }
@@ -188,8 +196,11 @@ const MainApp: React.FC = () => {
     setIsChangingFirstTimePass(true);
     try {
       await forceChangePassword(firstTimeNewPassword);
+      showSuccess('Your permanent password has been set successfully!', 'Welcome to PragatiDesk');
     } catch (err: any) {
-      setFirstTimeError(err.message || 'Failed to update password');
+      const msg = err.message || 'Failed to update password';
+      setFirstTimeError(msg);
+      showError(msg);
     } finally {
       setIsChangingFirstTimePass(false);
     }
@@ -650,9 +661,11 @@ const MainApp: React.FC = () => {
 
 export function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 
