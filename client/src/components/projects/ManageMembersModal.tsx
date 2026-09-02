@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../../services/api';
 import { Project, ProjectMember, ProjectRole, User, RoleMaster } from '../../types';
+import { useToast } from '../../context/ToastContext';
 import { RoleBadge } from '../common/Badge';
 import {
   X,
@@ -61,12 +62,14 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
   onMembersUpdated,
   onUpdated,
 }) => {
+  const { showSuccess, showError } = useToast();
   const [employees, setEmployees] = useState<User[]>([]);
   const [dbRoles, setDbRoles] = useState<RoleMaster[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<ProjectRole[]>(['RESOLVING_EMPLOYEE']);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Edit roles inline state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -144,9 +147,15 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
     setIsAdding(true);
     try {
       await api.assignProjectMemberRoles(project.id, selectedUserId, selectedRoles);
+      const successText = 'Member assigned to project with selected roles!';
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Member Added');
+      setTimeout(() => setSuccessMessage(null), 3000);
       triggerUpdate();
     } catch (err: any) {
-      setError(err.message || 'Failed to add member to project');
+      const msg = err.message || 'Failed to add member to project';
+      setError(msg);
+      showError(msg);
     } finally {
       setIsAdding(false);
     }
@@ -156,9 +165,15 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
     try {
       await api.assignProjectMemberRoles(project.id, userId, editingRoles);
       setEditingUserId(null);
+      const successText = 'Member roles updated successfully!';
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Roles Updated');
+      setTimeout(() => setSuccessMessage(null), 3000);
       triggerUpdate();
     } catch (err: any) {
-      setError(err.message || 'Failed to update roles');
+      const msg = err.message || 'Failed to update roles';
+      setError(msg);
+      showError(msg);
     }
   };
 
@@ -166,9 +181,15 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
     if (!window.confirm('Remove this employee from the project?')) return;
     try {
       await api.removeProjectMember(project.id, userId);
+      const successText = 'Employee removed from project.';
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Member Removed');
+      setTimeout(() => setSuccessMessage(null), 3000);
       triggerUpdate();
     } catch (err: any) {
-      setError(err.message || 'Failed to remove member');
+      const msg = err.message || 'Failed to remove member';
+      setError(msg);
+      showError(msg);
     }
   };
 
@@ -197,6 +218,13 @@ export const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {successMessage && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex items-center gap-2 font-bold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
