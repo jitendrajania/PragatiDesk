@@ -13,18 +13,18 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: "file:./prisma/dev.db"
+        value: "postgresql://pragatidesk_user:E09QcMMIdlsmGqfhgaaxgJZyqfDdizjn@dpg-dac0ilvqj5pc739j0fsg-a/pragatidesk"
       - key: JWT_SECRET
         value: "pragatidesk_doitc_secret_key_2026_jwt_token_secure"
       - key: SMTP_HOST
         value: "smtp.gmail.com"
       - key: SMTP_PORT
-        value: "587"
+        value: "465"
       - key: SMTP_SECURE
-        value: "false"
+        value: "true"
       - key: SMTP_USER
         value: "jitendra.jania@gmail.com"
       - key: SMTP_PASS
-        value: "ubuh iebl qedx fkdt"
+        value: "ubuhieblqedxfkdt"
       - key: SMTP_FROM
-        value: "PragatiDesk DoIT&C <jitendra.jania@gmail.com>"
+        value: "PragatiDesk (DoIT&C Rajasthan) <jitendra.jania@gmail.com>"
