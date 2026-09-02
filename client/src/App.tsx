@@ -60,6 +60,7 @@ const MainApp: React.FC = () => {
   // Quick stats for badges
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [followUpCount, setFollowUpCount] = useState<number>(0);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   // Login Form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -95,6 +96,7 @@ const MainApp: React.FC = () => {
       setProjects(projectsData);
       setPendingCount(statsData.summary?.pending || 0);
       setFollowUpCount(followUpsData.length || 0);
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to load global metadata:', err);
     }
@@ -584,6 +586,7 @@ const MainApp: React.FC = () => {
               searchQuery={searchQuery}
               onSelectTask={(id) => setSelectedTaskId(id)}
               onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+              refreshTrigger={refreshTrigger}
             />
           )}
 
@@ -594,6 +597,7 @@ const MainApp: React.FC = () => {
               searchQuery={searchQuery}
               onSelectTask={(id) => setSelectedTaskId(id)}
               onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+              refreshTrigger={refreshTrigger}
             />
           )}
 
