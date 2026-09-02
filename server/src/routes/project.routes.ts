@@ -18,11 +18,12 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
         // Office Super Admin sees all projects in their office
         whereClause = { officeId: req.user?.officeId };
       } else if (isGroupHead) {
-        // Group Head sees projects they manage OR projects with incoming pending transfer to them
+        // Group Head sees projects they manage OR projects with incoming pending transfer to them OR projects where they are a member
         whereClause = {
           OR: [
             { groupHeadId: req.user?.id },
             { transferToGroupHeadId: req.user?.id, transferStatus: 'PENDING_TRANSFER' },
+            { members: { some: { userId: req.user?.id } } },
           ],
         };
       } else {
