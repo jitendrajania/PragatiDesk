@@ -20,6 +20,7 @@ import {
 
 import { api } from '../../services/api';
 import { DesignationMaster } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ const PHONE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6789]\d{9}$/;
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, updateProfile, changePassword } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
 
@@ -117,9 +119,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         designation: designation.trim() || user.designation,
       });
 
-      setSuccessMessage('Your profile details have been successfully updated. An automated notification was sent to your registered email.');
+      const msg = 'Your profile details have been successfully updated. An automated notification was sent to your registered email.';
+      setSuccessMessage(msg);
+      showSuccess('Profile details updated successfully!', 'Profile Updated');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update profile.');
+      const msg = err.message || 'Failed to update profile.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -157,9 +163,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setSuccessMessage('Your password has been changed successfully. A security confirmation has been dispatched to your email.');
+      const msg = 'Your password has been changed successfully. A security confirmation has been dispatched to your email.';
+      setSuccessMessage(msg);
+      showSuccess('Password updated successfully!', 'Security Updated');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to change password. Please check your existing password.');
+      const msg = err.message || 'Failed to change password. Please check your existing password.';
+      setErrorMessage(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
