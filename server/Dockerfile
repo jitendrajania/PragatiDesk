@@ -15,4 +15,4 @@ RUN npm run build
 
 EXPOSE 5050
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node dist/index.js"]
