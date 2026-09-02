@@ -10,6 +10,7 @@ import {
   Download,
   Eye,
   Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -19,6 +20,7 @@ interface TasksTableViewProps {
   searchQuery: string;
   onSelectTask: (taskId: string) => void;
   onOpenCreateTask: () => void;
+  refreshTrigger?: number;
 }
 
 export const TasksTableView: React.FC<TasksTableViewProps> = ({
@@ -26,6 +28,7 @@ export const TasksTableView: React.FC<TasksTableViewProps> = ({
   searchQuery,
   onSelectTask,
   onOpenCreateTask,
+  refreshTrigger,
 }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -68,7 +71,7 @@ export const TasksTableView: React.FC<TasksTableViewProps> = ({
 
   useEffect(() => {
     fetchTasks();
-  }, [selectedProjectId, statusFilter, priorityFilter, categoryFilter, searchQuery]);
+  }, [selectedProjectId, statusFilter, priorityFilter, categoryFilter, searchQuery, refreshTrigger]);
 
   // Export to CSV
   const handleExportCSV = () => {
@@ -117,8 +120,17 @@ export const TasksTableView: React.FC<TasksTableViewProps> = ({
 
         <div className="flex items-center gap-2.5">
           <button
+            onClick={() => fetchTasks()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors shadow-xs"
+            title="Reload live tasks list"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin text-brand-600' : ''}`} />
+            <span>{isLoading ? 'Fetching...' : 'Refresh'}</span>
+          </button>
+          <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors shadow-xs"
           >
             <Download className="w-4 h-4 text-slate-500" />
             Export CSV
