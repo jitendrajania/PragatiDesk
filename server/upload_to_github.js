@@ -30,47 +30,61 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 
-async function uploadFile(filePath, relPath) {
+async function uploadFile(filePath, relPath, retries = 3) {
   const content = fs.readFileSync(filePath).toString('base64');
   const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${relPath.replace(/\\/g, '/')}`;
 
-  // Check if file already exists to get SHA
-  let sha = undefined;
-  try {
-    const checkRes = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        'User-Agent': 'PragatiDesk-Deployer',
-        Accept: 'application/vnd.github+json',
-      },
-    });
-    if (checkRes.ok) {
-      const data = await checkRes.json();
-      sha = data.sha;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Check if file already exists to get SHA
+      let sha = undefined;
+      try {
+        const checkRes = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            'User-Agent': 'PragatiDesk-Deployer',
+            Accept: 'application/vnd.github+json',
+          },
+        });
+        if (checkRes.ok) {
+          const data = await checkRes.json();
+          sha = data.sha;
+        }
+      } catch (e) {}
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          'User-Agent': 'PragatiDesk-Deployer',
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Update ${relPath} for PostgreSQL migration`,
+          content,
+          ...(sha ? { sha } : {}),
+        }),
+      });
+
+      if (res.ok) {
+        console.log(`✅ Uploaded: ${relPath}`);
+        return true;
+      } else {
+        const err = await res.text();
+        console.warn(`⚠️ Attempt ${attempt} failed for ${relPath}: ${err}`);
+      }
+    } catch (err) {
+      console.warn(`⚠️ Attempt ${attempt} network error for ${relPath}: ${err.message}`);
     }
-  } catch (e) {}
 
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      'User-Agent': 'PragatiDesk-Deployer',
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: `Upload ${relPath}`,
-      content,
-      ...(sha ? { sha } : {}),
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error(`❌ Failed: ${relPath} - ${err}`);
-  } else {
-    console.log(`✅ Uploaded: ${relPath}`);
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
   }
+
+  console.error(`❌ Failed permanently: ${relPath}`);
+  return false;
 }
 
 async function main() {
@@ -78,12 +92,15 @@ async function main() {
   const allFiles = getAllFiles(ROOT_DIR);
   console.log(`📁 Found ${allFiles.length} source code files to upload (node_modules excluded).`);
 
+  let successCount = 0;
   for (const file of allFiles) {
     const rel = path.relative(ROOT_DIR, file);
-    await uploadFile(file, rel);
+    const ok = await uploadFile(file, rel);
+    if (ok) successCount++;
+    await new Promise((r) => setTimeout(r, 200)); // gentle pacing to avoid rate limit
   }
 
-  console.log(`🎉 All files uploaded successfully to GitHub!`);
+  console.log(`🎉 ${successCount}/${allFiles.length} files uploaded successfully to GitHub!`);
 }
 
 main().catch(console.error);
