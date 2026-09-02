@@ -72,10 +72,53 @@ if (fs.existsSync(clientDistDir)) {
   });
 }
 
-app.listen(PORT, () => {
+import { prisma } from './prisma';
+
+async function autoInitDatabase() {
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log('🌱 Empty database detected. Restoring live snapshot...');
+      const seedJsonPath = path.join(__dirname, '../prisma/production_seed.json');
+      if (fs.existsSync(seedJsonPath)) {
+        const data = JSON.parse(fs.readFileSync(seedJsonPath, 'utf-8'));
+        for (const off of data.offices || []) {
+          await prisma.officeMaster.upsert({ where: { id: off.id }, update: {}, create: off });
+        }
+        for (const sec of data.sections || []) {
+          await prisma.sectionMaster.upsert({ where: { id: sec.id }, update: {}, create: sec });
+        }
+        for (const des of data.designations || []) {
+          await prisma.designationMaster.upsert({ where: { id: des.id }, update: {}, create: des });
+        }
+        for (const role of data.roles || []) {
+          await prisma.roleMaster.upsert({ where: { id: role.id }, update: {}, create: role });
+        }
+        for (const u of data.users || []) {
+          await prisma.user.upsert({ where: { id: u.id }, update: {}, create: u });
+        }
+        for (const p of data.projects || []) {
+          await prisma.project.upsert({ where: { id: p.id }, update: {}, create: p });
+        }
+        for (const m of data.members || []) {
+          await prisma.projectMember.upsert({ where: { id: m.id }, update: {}, create: m });
+        }
+        for (const t of data.tasks || []) {
+          await prisma.task.upsert({ where: { id: t.id }, update: {}, create: t });
+        }
+        console.log(`✅ Production database successfully initialized with ${data.users.length} accounts!`);
+      }
+    }
+  } catch (err) {
+    console.error('Database auto-initialization note:', err);
+  }
+}
+
+app.listen(PORT, async () => {
   console.log(`====================================================`);
   console.log(`🚀 PragatiDesk API Server running on port ${PORT}`);
   console.log(`🌐 Local URL:   http://localhost:${PORT}`);
   console.log(`🏢 Office LAN:  http://10.68.100.143:${PORT}`);
   console.log(`====================================================`);
+  await autoInitDatabase();
 });
