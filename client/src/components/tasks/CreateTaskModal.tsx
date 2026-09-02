@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Project, AssigneeOption } from '../../types';
+import { useToast } from '../../context/ToastContext';
 import {
   X,
   Plus,
@@ -9,6 +10,7 @@ import {
   Clock,
   Calendar,
   AlertCircle,
+  CheckCircle2,
   Paperclip,
   Building,
   Hash,
@@ -51,6 +53,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { showSuccess, showError } = useToast();
 
   // Sync default project and reset assignee when modal opens
   useEffect(() => {
@@ -111,7 +116,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       }
 
       // 2. Submit task (Zero-mandatory fields!)
-      await api.createTask({
+      const createdTask = await api.createTask({
         projectId: projectId || (projects.length > 0 ? projects[0].id : undefined),
         referenceNumber: referenceNumber || undefined,
         rajKajNumber: rajKajNumber || undefined,
@@ -130,6 +135,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         attachments: uploadedAttachments,
       });
 
+      const taskNumberStr = createdTask?.taskNumber ? ` (${createdTask.taskNumber})` : '';
+      const successText = `Task / Issue${taskNumberStr} created successfully!`;
+      setSuccessMessage(successText);
+      showSuccess(successText, 'Task Created Successfully');
+
       // Reset form
       setSubject('');
       setReferenceNumber('');
@@ -143,10 +153,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       setInitialRemark('');
 
       onTaskCreated();
-      onClose();
+      setTimeout(() => {
+        setSuccessMessage(null);
+        onClose();
+      }, 700);
     } catch (err: any) {
       console.error('Task creation error:', err);
-      setError(err.message || 'Failed to create task');
+      const msg = err.message || 'Failed to create task';
+      setError(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
       setIsUploading(false);
@@ -179,6 +194,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
         {/* Content Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+          {successMessage && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex items-center gap-2 font-bold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
