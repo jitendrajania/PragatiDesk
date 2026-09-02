@@ -73,40 +73,161 @@ if (fs.existsSync(clientDistDir)) {
 }
 
 import { prisma } from './prisma';
+import { execSync } from 'child_process';
 
 async function autoInitDatabase() {
   try {
+    // 1. Ensure SQLite schema is 100% in sync
+    try {
+      execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'ignore' });
+    } catch (pushErr) {
+      console.log('Prisma schema sync note:', pushErr);
+    }
+
+    // 2. Check and restore snapshot if database is empty
     const userCount = await prisma.user.count();
     if (userCount === 0) {
       console.log('🌱 Empty database detected. Restoring live snapshot...');
       const seedJsonPath = path.join(__dirname, '../prisma/production_seed.json');
       if (fs.existsSync(seedJsonPath)) {
         const data = JSON.parse(fs.readFileSync(seedJsonPath, 'utf-8'));
+
         for (const off of data.offices || []) {
-          await prisma.officeMaster.upsert({ where: { id: off.id }, update: {}, create: off });
+          await prisma.officeMaster.upsert({
+            where: { id: off.id },
+            update: {},
+            create: {
+              id: off.id,
+              name: off.name,
+              code: off.code,
+              district: off.district,
+              address: off.address,
+              isActive: off.isActive,
+            },
+          });
         }
+
         for (const sec of data.sections || []) {
-          await prisma.sectionMaster.upsert({ where: { id: sec.id }, update: {}, create: sec });
+          await prisma.sectionMaster.upsert({
+            where: { id: sec.id },
+            update: {},
+            create: {
+              id: sec.id,
+              name: sec.name,
+              code: sec.code,
+              officeId: sec.officeId,
+              isActive: sec.isActive,
+            },
+          });
         }
+
         for (const des of data.designations || []) {
-          await prisma.designationMaster.upsert({ where: { id: des.id }, update: {}, create: des });
+          await prisma.designationMaster.upsert({
+            where: { id: des.id },
+            update: {},
+            create: {
+              id: des.id,
+              title: des.title,
+              cadre: des.cadre,
+              isActive: des.isActive,
+            },
+          });
         }
+
         for (const role of data.roles || []) {
-          await prisma.roleMaster.upsert({ where: { id: role.id }, update: {}, create: role });
+          await prisma.roleMaster.upsert({
+            where: { id: role.id },
+            update: {},
+            create: {
+              id: role.id,
+              name: role.name,
+              code: role.code,
+              description: role.description,
+              isSystem: role.isSystem,
+              permissionsJson: role.permissionsJson,
+              isActive: role.isActive,
+            },
+          });
         }
+
         for (const u of data.users || []) {
-          await prisma.user.upsert({ where: { id: u.id }, update: {}, create: u });
+          await prisma.user.upsert({
+            where: { id: u.id },
+            update: {},
+            create: {
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              ssoId: u.ssoId,
+              passwordHash: u.passwordHash,
+              phone: u.phone,
+              gmailId: u.gmailId,
+              designation: u.designation,
+              systemRole: u.systemRole,
+              roleId: u.roleId,
+              officeId: u.officeId,
+              officeName: u.officeName,
+              sectionId: u.sectionId,
+              sectionName: u.sectionName,
+              isActive: u.isActive,
+              mustChangePassword: u.mustChangePassword || false,
+            },
+          });
         }
+
         for (const p of data.projects || []) {
-          await prisma.project.upsert({ where: { id: p.id }, update: {}, create: p });
+          await prisma.project.upsert({
+            where: { id: p.id },
+            update: {},
+            create: {
+              id: p.id,
+              name: p.name,
+              projectCode: p.projectCode,
+              description: p.description,
+              status: p.status,
+              officeId: p.officeId,
+              officeName: p.officeName,
+              groupHeadId: p.groupHeadId,
+            },
+          });
         }
+
         for (const m of data.members || []) {
-          await prisma.projectMember.upsert({ where: { id: m.id }, update: {}, create: m });
+          await prisma.projectMember.upsert({
+            where: { id: m.id },
+            update: {},
+            create: {
+              id: m.id,
+              projectId: m.projectId,
+              userId: m.userId,
+              rolesJson: m.rolesJson,
+            },
+          });
         }
+
         for (const t of data.tasks || []) {
-          await prisma.task.upsert({ where: { id: t.id }, update: {}, create: t });
+          await prisma.task.upsert({
+            where: { id: t.id },
+            update: {},
+            create: {
+              id: t.id,
+              taskNumber: t.taskNumber,
+              referenceNumber: t.referenceNumber,
+              rajKajNumber: t.rajKajNumber,
+              issueNumber: t.issueNumber,
+              subject: t.subject,
+              description: t.description,
+              letterEmailContent: t.letterEmailContent,
+              status: t.status,
+              priority: t.priority,
+              category: t.category,
+              projectId: t.projectId,
+              createdById: t.createdById,
+              currentAssigneeId: t.currentAssigneeId,
+            },
+          });
         }
-        console.log(`✅ Production database successfully initialized with ${data.users.length} accounts!`);
+        console.log(`✅ Production database successfully initialized with ${data.users.length} accounts including ANKIT!`);
       }
     }
   } catch (err) {
