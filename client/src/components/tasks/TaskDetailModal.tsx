@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, UPLOADS_BASE_URL } from '../../services/api';
 import { Task, TaskActivity, FollowUpReport } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import {
   StatusBadge,
   PriorityBadge,
@@ -49,6 +50,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   onTaskUpdated,
 }) => {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [task, setTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'timeline' | 'followup'>('details');
@@ -139,11 +141,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     setIsDeletingTask(true);
     try {
       await api.deleteTask(task.id);
+      showSuccess(`Task [${task.taskNumber}] deleted successfully.`, 'Task Deleted');
       onTaskUpdated();
       onClose();
     } catch (err: any) {
       console.error('Failed to delete task:', err);
-      alert(err.message || 'Failed to delete task');
+      showError(err.message || 'Failed to delete task', 'Delete Failed');
     } finally {
       setIsDeletingTask(false);
     }
@@ -165,10 +168,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         category: editCategory,
       });
       setIsEditing(false);
+      showSuccess(`Task [${task.taskNumber}] updated successfully!`, 'Task Updated');
       await fetchTask();
       onTaskUpdated();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update task:', err);
+      showError(err.message || 'Failed to update task');
     } finally {
       setIsSavingEdit(false);
     }
@@ -183,10 +188,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         allocatedDurationValue: durationVal ? Number(durationVal) : undefined,
         allocatedDurationUnit: durationUnit,
       });
+      showSuccess(`Task SLA and Priority updated successfully!`, 'SLA Updated');
       await fetchTask();
       onTaskUpdated();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update priority:', err);
+      showError(err.message || 'Failed to update priority');
     }
   };
 
@@ -205,10 +212,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       setFollowUpRemarks('');
       setNextFollowUpDate('');
       setShowAddFollowUp(false);
+      showSuccess('Follow-up compliance report logged successfully!', 'Follow-Up Saved');
       await fetchTask();
       onTaskUpdated();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to add follow-up report:', err);
+      showError(err.message || 'Failed to add follow-up report');
     } finally {
       setIsSubmittingFollowUp(false);
     }
