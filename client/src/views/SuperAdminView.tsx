@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { SystemRoleBadge } from '../components/common/Badge';
 import {
   OfficeMaster,
@@ -53,6 +54,7 @@ export const SuperAdminView: React.FC = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.systemRole === 'SUPER_ADMIN';
   const isOfficeSuperAdmin = user?.systemRole === 'OFFICE_SUPER_ADMIN';
+  const { showSuccess, showError } = useToast();
 
   // Active Admin Sub-Tab: 'users' | 'masters' | 'roles'
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'masters' | 'roles'>('users');
@@ -238,6 +240,7 @@ export const SuperAdminView: React.FC = () => {
         pass: res.generatedDefaultPassword || 'DoITC@2026',
       });
 
+      showSuccess("User '" + res.name + "' registered successfully!", "User Registered");
       setShowCreateUserModal(false);
       setUserForm({
         name: '',
@@ -285,6 +288,7 @@ export const SuperAdminView: React.FC = () => {
         pass: res.generatedDefaultPassword || 'DoITC@2026',
       });
 
+      showSuccess("Super Admin '" + res.name + "' provisioned successfully!", "Super Admin Created");
       setShowCreateSuperAdminModal(false);
       setSuperAdminForm({
         name: '',
@@ -326,6 +330,7 @@ export const SuperAdminView: React.FC = () => {
       });
 
       setSuccessMessage(`User profile for ${editingUser.name} successfully updated.`);
+      showSuccess(`User profile for ${editingUser.name} successfully updated.`);
       setEditingUser(null);
       await loadAllData();
     } catch (err: any) {
@@ -341,6 +346,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.deleteUser(id);
       setSuccessMessage(`User '${name}' deleted successfully.`);
+      showSuccess(`User '${name}' deleted successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete user.');
@@ -352,6 +358,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.updateUser(userObj.id, { isActive: !userObj.isActive });
       setSuccessMessage(`User status changed to ${!userObj.isActive ? 'Active' : 'Deactivated'}.`);
+      showSuccess(`User status changed to ${!userObj.isActive ? 'Active' : 'Deactivated'}.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to toggle status.');
@@ -377,6 +384,7 @@ export const SuperAdminView: React.FC = () => {
       });
 
       setSuccessMessage(`Password for ${resettingUser.name} (${resettingUser.ssoId}) has been reset successfully.`);
+      showSuccess(`Password for ${resettingUser.name} (${resettingUser.ssoId}) has been reset successfully.`);
       setResettingUser(null);
       setResetCustomPassword('');
       await loadAllData();
@@ -403,6 +411,7 @@ export const SuperAdminView: React.FC = () => {
       setShowCreateOfficeModal(false);
       setOfficeForm({ name: '', code: '', district: '', address: '' });
       setSuccessMessage('Office registered successfully.');
+      showSuccess('Office registered successfully.');
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create office.');
@@ -419,6 +428,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.deleteOffice(offId);
       setSuccessMessage(`Office '${offName}' deleted successfully.`);
+      showSuccess(`Office '${offName}' deleted successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete office.');
@@ -441,6 +451,7 @@ export const SuperAdminView: React.FC = () => {
         address: editingOffice.address ? editingOffice.address.trim() : undefined,
       });
       setSuccessMessage(`Office '${editingOffice.name}' updated successfully.`);
+      showSuccess(`Office '${editingOffice.name}' updated successfully.`);
       setEditingOffice(null);
       await loadAllData();
     } catch (err: any) {
@@ -463,6 +474,7 @@ export const SuperAdminView: React.FC = () => {
       setShowCreateSectionModal(false);
       setSectionForm({ name: '', code: '', officeId: offices[0]?.id || '' });
       setSuccessMessage('Section registered successfully.');
+      showSuccess('Section registered successfully.');
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create section.');
@@ -479,6 +491,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.deleteSection(secId);
       setSuccessMessage(`Section '${secName}' deleted successfully.`);
+      showSuccess(`Section '${secName}' deleted successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete section.');
@@ -500,6 +513,7 @@ export const SuperAdminView: React.FC = () => {
         officeId: editingSection.officeId,
       });
       setSuccessMessage(`Section '${editingSection.name}' updated successfully.`);
+      showSuccess(`Section '${editingSection.name}' updated successfully.`);
       setEditingSection(null);
       await loadAllData();
     } catch (err: any) {
@@ -518,6 +532,7 @@ export const SuperAdminView: React.FC = () => {
       setShowCreateDesignationModal(false);
       setDesignationForm({ title: '', cadre: '' });
       setSuccessMessage('Designation registered successfully.');
+      showSuccess('Designation registered successfully.');
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create designation.');
@@ -534,6 +549,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.deleteDesignation(desId);
       setSuccessMessage(`Designation '${desTitle}' deleted successfully.`);
+      showSuccess(`Designation '${desTitle}' deleted successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete designation.');
@@ -554,6 +570,7 @@ export const SuperAdminView: React.FC = () => {
         cadre: editingDesignation.cadre ? editingDesignation.cadre.trim() : undefined,
       });
       setSuccessMessage(`Designation '${editingDesignation.title}' updated successfully.`);
+      showSuccess(`Designation '${editingDesignation.title}' updated successfully.`);
       setEditingDesignation(null);
       await loadAllData();
     } catch (err: any) {
@@ -593,6 +610,7 @@ export const SuperAdminView: React.FC = () => {
       });
 
       setSuccessMessage('Custom Role & Module Permissions created successfully.');
+      showSuccess('Custom Role & Module Permissions created successfully.');
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create role.');
@@ -644,6 +662,7 @@ export const SuperAdminView: React.FC = () => {
 
       setEditingRole(null);
       setSuccessMessage(`Role '${editingRole.name}' and module permissions updated successfully.`);
+      showSuccess(`Role '${editingRole.name}' and module permissions updated successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to update role.');
@@ -664,6 +683,7 @@ export const SuperAdminView: React.FC = () => {
     try {
       await api.deleteRole(r.id);
       setSuccessMessage(`Role '${r.name}' deleted successfully.`);
+      showSuccess(`Role '${r.name}' deleted successfully.`);
       await loadAllData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete role.');
