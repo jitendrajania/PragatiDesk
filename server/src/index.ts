@@ -77,14 +77,7 @@ import { execSync } from 'child_process';
 
 async function autoInitDatabase() {
   try {
-    // 1. Ensure SQLite schema is 100% in sync
-    try {
-      execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'ignore' });
-    } catch (pushErr) {
-      console.log('Prisma schema sync note:', pushErr);
-    }
-
-    // 2. Check and restore snapshot if database is empty
+    // Check and restore snapshot if database is empty
     const userCount = await prisma.user.count();
     if (userCount === 0) {
       console.log('🌱 Empty database detected. Restoring live snapshot...');
