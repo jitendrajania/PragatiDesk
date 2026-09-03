@@ -1,4 +1,4 @@
-﻿FROM node:20-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -19,5 +19,5 @@ RUN npm run build
 
 EXPOSE 5050
 
-# Apply schema migrations to PostgreSQL, run non-destructive seed, and start production server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npx ts-node prisma/seed.ts && node dist/index.js"]
+# Apply schema migrations to PostgreSQL and start production server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
