@@ -18,20 +18,20 @@ import {
 
 const getBaseApiUrl = (): string => {
   if (typeof window !== 'undefined') {
-    if (window.location.port === '5050' || window.location.pathname.startsWith('/api')) {
+    if (window.location.port === '5000' || window.location.pathname.startsWith('/api')) {
       return `${window.location.origin}/api`;
     }
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 };
 
 const getBaseUploadsUrl = (): string => {
   if (typeof window !== 'undefined') {
-    if (window.location.port === '5050') {
+    if (window.location.port === '5000') {
       return window.location.origin;
     }
   }
-  return import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5050';
+  return import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
 };
 
 const API_BASE_URL = getBaseApiUrl();
