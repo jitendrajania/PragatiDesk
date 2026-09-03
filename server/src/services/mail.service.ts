@@ -27,7 +27,9 @@ function getTransporter(): nodemailer.Transporter | null {
       const isGmail = (host && host.toLowerCase().includes('gmail')) || user.toLowerCase().includes('@gmail.com');
       if (isGmail) {
         transporter = nodemailer.createTransport({
-          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
           auth: {
             user,
             pass,
@@ -35,8 +37,11 @@ function getTransporter(): nodemailer.Transporter | null {
           tls: {
             rejectUnauthorized: false,
           },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000,
         });
-        console.log(`✉️ [MAIL SERVICE] Gmail SMTP Transporter initialized for sender: ${user}`);
+        console.log(`✉️ [MAIL SERVICE] Gmail SMTP Transporter initialized (port 587 STARTTLS) for sender: ${user}`);
       } else {
         transporter = nodemailer.createTransport({
           host,
@@ -49,6 +54,9 @@ function getTransporter(): nodemailer.Transporter | null {
           tls: {
             rejectUnauthorized: false,
           },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000,
         });
         console.log(`✉️ [MAIL SERVICE] SMTP Transporter configured for host: ${host}:${port}`);
       }
