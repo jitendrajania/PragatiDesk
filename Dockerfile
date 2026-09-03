@@ -19,5 +19,5 @@ RUN npm run build
 
 EXPOSE 5050
 
-# Apply schema migrations to PostgreSQL and start production server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+# Start production server
+CMD ["node", "dist/index.js"]
