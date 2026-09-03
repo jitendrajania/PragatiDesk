@@ -346,10 +346,12 @@ router.post('/', authenticate, requireRole('SUPER_ADMIN', 'OFFICE_SUPER_ADMIN'),
         const off = await prisma.officeMaster.findUnique({ where: { id: finalOfficeId } });
         if (off) officeName = off.name;
       }
-      if (finalSectionId) {
-        const sec = await prisma.sectionMaster.findUnique({ where: { id: finalSectionId } });
-        if (sec) sectionName = sec.name;
+      if (!finalSectionId) {
+        res.status(400).json({ error: 'Section/Group Head Name is mandatory.' });
+        return;
       }
+      const sec = await prisma.sectionMaster.findUnique({ where: { id: finalSectionId } });
+      if (sec) sectionName = sec.name;
     }
 
     // Default password generation & first-time login enforcement
@@ -511,6 +513,11 @@ router.post('/employees', authenticate, requireRole('GROUP_HEAD', 'OFFICE_SUPER_
       sectionId = req.user.sectionId;
     } else if (req.user?.systemRole === 'OFFICE_SUPER_ADMIN') {
       officeId = req.user.officeId;
+    }
+
+    if (!sectionId) {
+      res.status(400).json({ error: 'Section/Group Head Name is mandatory.' });
+      return;
     }
 
     const valErr = validateUserFields({ email, phone, ssoId, gmailId });
