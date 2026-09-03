@@ -56,6 +56,8 @@ export const EmployeesView: React.FC = () => {
   const [designation, setDesignation] = useState('');
   const [phone, setPhone] = useState('');
   const [gmailId, setGmailId] = useState('');
+  const [selectedOfficeId, setSelectedOfficeId] = useState('');
+  const [selectedSectionId, setSelectedSectionId] = useState('');
   const [customPassword, setCustomPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -112,6 +114,13 @@ export const EmployeesView: React.FC = () => {
       if (desData.length > 0 && !designation) {
         setDesignation(desData[0].title);
       }
+
+      if (offData.length > 0 && !selectedOfficeId) {
+        setSelectedOfficeId(isOfficeSuperAdmin || isGroupHead ? user?.officeId || offData[0].id : offData[0].id);
+      }
+      if (isGroupHead && user?.sectionId) {
+        setSelectedSectionId(user.sectionId);
+      }
     } catch (err: any) {
       console.error('Failed to load employee records:', err);
       setErrorMessage(err.message || 'Failed to load employee directory.');
@@ -147,6 +156,16 @@ export const EmployeesView: React.FC = () => {
       return;
     }
 
+    const finalOfficeId = isOfficeSuperAdmin || isGroupHead ? user?.officeId : (selectedOfficeId || offices[0]?.id);
+    const finalSectionId = isGroupHead ? user?.sectionId : selectedSectionId;
+
+    if (!finalSectionId) {
+      const msg = 'Section/Group Head Name is mandatory. Please select a section/group head.';
+      setErrorMessage(msg);
+      showError(msg);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload: any = {
@@ -156,8 +175,8 @@ export const EmployeesView: React.FC = () => {
         designation: designation || designations[0]?.title || 'Analyst-cum-Programmer (ACP)',
         phone: phone ? phone.trim() : undefined,
         gmailId: gmailId ? gmailId.toLowerCase().trim() : undefined,
-        officeId: user?.officeId,
-        sectionId: user?.sectionId,
+        officeId: finalOfficeId,
+        sectionId: finalSectionId,
         password: customPassword || undefined,
       };
 
@@ -177,6 +196,7 @@ export const EmployeesView: React.FC = () => {
       setSsoId('');
       setPhone('');
       setGmailId('');
+      setSelectedSectionId(isGroupHead ? user?.sectionId || '' : '');
       setCustomPassword('');
       setShowRegisterModal(false);
       await fetchEmployeesData();
@@ -434,6 +454,8 @@ export const EmployeesView: React.FC = () => {
                 setPhone('');
                 setGmailId('');
                 setCustomPassword('');
+                setSelectedOfficeId(isOfficeSuperAdmin || isGroupHead ? user?.officeId || '' : (offices[0]?.id || ''));
+                setSelectedSectionId(isGroupHead ? user?.sectionId || '' : '');
                 setShowRegisterModal(true);
               }}
               className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-all cursor-pointer"
@@ -902,15 +924,80 @@ export const EmployeesView: React.FC = () => {
             </div>
 
             <form onSubmit={handleRegister} className="space-y-3.5">
-              {/* Context Auto-Fill Badge */}
-              <div className="p-3 bg-brand-50/70 rounded-2xl border border-brand-100 text-xs space-y-1">
-                <div className="text-[10px] font-bold text-brand-800 uppercase tracking-wider">
-                  Auto-Populated Office & Section/Group Head:
-                </div>
-                <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>{user?.officeName || 'DoIT&C Secretariat, Jaipur (HQ)'}</span>
-                  <span className="text-brand-700">{user?.sectionName || 'Assigned Section/Group Head'}</span>
-                </div>
+              {/* Office & Section/Group Head Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {isSuperAdmin ? (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Office Name *</label>
+                    <select
+                      value={selectedOfficeId}
+                      onChange={(e) => {
+                        setSelectedOfficeId(e.target.value);
+                        setSelectedSectionId('');
+                      }}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border rounded-xl cursor-pointer"
+                      required
+                    >
+                      {offices.map((off) => (
+                        <option key={off.id} value={off.id}>{off.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Assigned District Office *</span>
+                      <span className="text-[10px] text-amber-800 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> Frozen
+                      </span>
+                    </label>
+                    <div className="w-full text-xs px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-bold flex items-center justify-between">
+                      <span className="truncate">{user?.officeName || 'Assigned District Office'}</span>
+                      <Lock className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    </div>
+                  </div>
+                )}
+
+                {isGroupHead ? (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Assigned Section/Group Head *</span>
+                      <span className="text-[10px] text-brand-800 font-bold bg-brand-100 px-1.5 py-0.5 rounded border border-brand-300 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> Auto-Mapped
+                      </span>
+                    </label>
+                    <div className="w-full text-xs px-3 py-2 bg-brand-50/80 border border-brand-200 rounded-xl text-brand-900 font-bold flex items-center justify-between">
+                      <span className="truncate">{user?.sectionName || 'Assigned Section/Group Head'}</span>
+                      <Lock className="w-3.5 h-3.5 text-brand-700 flex-shrink-0" />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>
+                        Section/Group Head Name <span className="text-red-600 font-black">*</span>
+                      </span>
+                    </label>
+                    <select
+                      value={selectedSectionId}
+                      onChange={(e) => setSelectedSectionId(e.target.value)}
+                      className="w-full text-xs px-3 py-2 bg-slate-50 border rounded-xl cursor-pointer"
+                      required
+                    >
+                      <option value="">Select Section/Group Head (Mandatory)...</option>
+                      {sections
+                        .filter((s) => s.officeId === (isOfficeSuperAdmin ? user?.officeId : selectedOfficeId))
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                        ))}
+                    </select>
+                    {sections.filter((s) => s.officeId === (isOfficeSuperAdmin ? user?.officeId : selectedOfficeId)).length === 0 && (
+                      <p className="text-[10px] text-amber-700 mt-1 font-semibold">
+                        ⚠️ No Sections registered for this office. Please create one in Masters first.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1131,6 +1218,35 @@ export const EmployeesView: React.FC = () => {
                     {designations.map((d) => (
                       <option key={d.id} value={d.title}>{d.title}</option>
                     ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Office</label>
+                  <div className="w-full text-xs px-3 py-2 bg-slate-100 border rounded-xl text-slate-700 font-semibold truncate">
+                    {editingUser.officeName || user?.officeName || 'Assigned District Office'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Section/Group Head Name <span className="text-red-600 font-black">*</span>
+                  </label>
+                  <select
+                    value={editingUser.sectionId || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, sectionId: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border rounded-xl cursor-pointer"
+                    disabled={isGroupHead}
+                    required
+                  >
+                    <option value="">Select Section/Group Head...</option>
+                    {sections
+                      .filter((s) => !editingUser.officeId || s.officeId === editingUser.officeId)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                      ))}
                   </select>
                 </div>
               </div>
