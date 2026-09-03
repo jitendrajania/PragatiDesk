@@ -217,17 +217,26 @@ router.post('/send-otp', async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     if (!email) {
-      res.status(400).json({ error: 'Registered Email address is required.' });
+      res.status(400).json({ error: 'Registered Email address, Gmail ID, or SSO ID is required.' });
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
+    const cleanInput = email.toLowerCase().trim();
+    const rawInput = email.trim();
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: cleanInput },
+          { gmailId: cleanInput },
+          { ssoId: rawInput },
+          { ssoId: rawInput.toUpperCase() },
+        ],
+      },
     });
 
     if (!user) {
-      res.status(404).json({ error: 'No user registered with this email address.' });
+      res.status(404).json({ error: `No registered account found matching '${email}'. Please verify your email or SSO ID.` });
       return;
     }
 
@@ -235,35 +244,45 @@ router.post('/send-otp', async (req: Request, res: Response): Promise<void> => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    // Invalidate previous unused OTPs for this email
+    // Invalidate previous unused OTPs for this user's email
     await prisma.otpRecord.updateMany({
-      where: { email: cleanEmail, used: false },
+      where: {
+        OR: [
+          { email: user.email, used: false },
+          { email: cleanInput, used: false },
+        ],
+      },
       data: { used: true },
     });
 
     await prisma.otpRecord.create({
       data: {
-        email: cleanEmail,
+        email: user.email,
         otp,
         expiresAt,
         used: false,
       },
     });
 
-    console.log(`📧 [EMAIL OTP DISPATCH] Sent OTP '${otp}' to ${cleanEmail}`);
+    console.log(`📧 [EMAIL OTP DISPATCH] Sent OTP '${otp}' to official=${user.email}, gmail=${user.gmailId || 'none'}`);
 
     // Trigger Automated Email Dispatch (delivers to registered email and personal gmail if available)
-    sendOtpEmail(cleanEmail, otp, user.name, user.gmailId).catch((err) => console.error('⚠️ Failed to dispatch OTP email:', err));
+    try {
+      await sendOtpEmail(user.email, otp, user.name, user.gmailId);
+    } catch (err) {
+      console.error('⚠️ Failed to dispatch OTP email:', err);
+    }
 
     // Mask email for security display (e.g. vi****@doitc.gov.in)
-    const maskedEmail = cleanEmail.replace(
+    const targetDisplayEmail = user.gmailId || user.email;
+    const maskedEmail = targetDisplayEmail.replace(
       /^(.)(.*)(@.*)$/,
       (_m: string, first: string, middle: string, domain: string) => first + '*'.repeat(Math.max(middle.length, 3)) + domain
     );
 
     res.json({
       success: true,
-      message: `A 6-digit OTP verification code has been dispatched to your registered email address (${maskedEmail}). Please check your inbox or spam folder.`,
+      message: `A 6-digit OTP verification code has been dispatched to your registered email (${maskedEmail}). Please check your inbox or spam folder.`,
     });
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -286,12 +305,32 @@ router.post('/verify-otp-and-reset-password', async (req: Request, res: Response
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanInput = email.toLowerCase().trim();
+    const rawInput = email.trim();
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: cleanInput },
+          { gmailId: cleanInput },
+          { ssoId: rawInput },
+          { ssoId: rawInput.toUpperCase() },
+        ],
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'No user account found.' });
+      return;
+    }
 
     // Check valid OTP
     const validOtpRecord = await prisma.otpRecord.findFirst({
       where: {
-        email: cleanEmail,
+        OR: [
+          { email: user.email },
+          { email: cleanInput },
+        ],
         otp: otp.trim(),
         used: false,
         expiresAt: { gte: new Date() },
@@ -313,7 +352,7 @@ router.post('/verify-otp-and-reset-password', async (req: Request, res: Response
     // Update user password and clear mustChangePassword
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     const updatedUser = await prisma.user.update({
-      where: { email: cleanEmail },
+      where: { id: user.id },
       data: {
         passwordHash: newPasswordHash,
         mustChangePassword: false,
