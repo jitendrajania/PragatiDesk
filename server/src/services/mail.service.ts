@@ -317,12 +317,13 @@ export async function sendOtpEmail(
     <p style="font-size: 13px; color: #475569;">${userName ? `Hello ${userName}, ` : ''}Use the verification code below to reset your PragatiDesk password.</p>
     <div class="otp-badge">${otp}</div>
     <p style="font-size: 12px; color: #dc2626; font-weight: 600;">⚠️ This code will expire in 10 minutes. Do not disclose it to anyone.</p>
+    <p style="font-size: 11px; color: #94a3b8; margin-top: 20px;">PragatiDesk &bull; DoIT&C, Government of Rajasthan</p>
   </div>
 </body>
 </html>
 `;
 
-  return deliverEmail([email], subject, htmlContent, `OTP verification code '${otp}' dispatched to ${email}`);
+  return deliverEmail(recipients, subject, htmlContent, `OTP verification code '${otp}' dispatched to ${recipients.join(', ')}`);
 }
 
 /**
@@ -335,32 +336,40 @@ async function deliverEmail(
   logSummary: string
 ): Promise<boolean> {
   const mailTransporter = getTransporter();
+  const cleanRecipients = Array.from(new Set(recipients.filter((r) => r && r.trim()))).map((r) => r.trim());
+
+  if (cleanRecipients.length === 0) {
+    console.warn(`⚠️ [MAIL SERVICE] No valid recipients provided.`);
+    return false;
+  }
 
   console.log(`\n================================================================`);
   console.log(`📧 [MAIL DISPATCH QUEUE] Sending Email Notification`);
-  console.log(`   To:       ${recipients.join(', ')}`);
+  console.log(`   To:       ${cleanRecipients.join(', ')}`);
   console.log(`   Subject:  ${subject}`);
   console.log(`   Summary:  ${logSummary}`);
   console.log(`================================================================\n`);
 
   if (mailTransporter) {
     try {
-      const fromAddress = process.env.SMTP_FROM || `"PragatiDesk (DoIT&C Rajasthan)" <${process.env.SMTP_USER || 'arigates.creations@gmail.com'}>`;
+      const user = (process.env.SMTP_USER || SMTP_USER).trim();
+      const fromAddress = `"PragatiDesk - DoIT&C Rajasthan" <${user}>`;
+      const textFallback = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
       const info = await mailTransporter.sendMail({
         from: fromAddress,
-        to: recipients.join(', '),
+        to: cleanRecipients.join(', '),
         subject,
+        text: textFallback,
         html,
       });
       console.log(`✅ [MAIL SERVICE] Email delivered via SMTP! MessageId: ${info.messageId}`);
       return true;
     } catch (err: any) {
       console.error(`⚠️ [MAIL SERVICE] SMTP Delivery failed:`, err.message || err);
-      // Fallback preview is already logged
       return false;
     }
   } else {
-    // In local / dev environment without SMTP credentials, email is logged and simulated cleanly
     console.log(`ℹ️ [MAIL SERVICE] SMTP not configured in .env. Email successfully logged to dispatch stream.`);
     return true;
   }
