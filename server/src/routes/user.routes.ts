@@ -387,19 +387,23 @@ router.post('/', authenticate, requireRole('SUPER_ADMIN', 'OFFICE_SUPER_ADMIN'),
     console.log(`👤 [USER ONBOARDED] Created ${user.name} (${user.ssoId}) with default password: ${defaultPassword}`);
 
     // Trigger Automated Welcome Email with Default Password
-    sendWelcomeEmail(
-      {
-        name: user.name,
-        email: user.email,
-        gmailId: user.gmailId,
-        designation: user.designation,
-        ssoId: user.ssoId,
-        officeName: user.office?.name || user.officeName,
-        sectionName: user.section?.name || user.sectionName,
-        systemRole: user.systemRole,
-      },
-      defaultPassword
-    ).catch((err) => console.error('⚠️ Failed to dispatch welcome email:', err));
+    try {
+      await sendWelcomeEmail(
+        {
+          name: user.name,
+          email: user.email,
+          gmailId: user.gmailId,
+          designation: user.designation,
+          ssoId: user.ssoId,
+          officeName: user.office?.name || user.officeName,
+          sectionName: user.section?.name || user.sectionName,
+          systemRole: user.systemRole,
+        },
+        defaultPassword
+      );
+    } catch (err) {
+      console.error('⚠️ Failed to dispatch welcome email:', err);
+    }
 
     res.status(201).json({
       ...user,
@@ -601,19 +605,23 @@ router.post('/employees', authenticate, requireRole('GROUP_HEAD', 'OFFICE_SUPER_
     });
 
     // Trigger Automated Welcome Email with Default Password
-    sendWelcomeEmail(
-      {
-        name: employee.name,
-        email: employee.email,
-        gmailId: employee.gmailId,
-        designation: employee.designation,
-        ssoId: employee.ssoId,
-        officeName: employee.office?.name || employee.officeName,
-        sectionName: employee.section?.name || employee.sectionName,
-        systemRole: employee.systemRole,
-      },
-      defaultPassword
-    ).catch((err) => console.error('⚠️ Failed to dispatch welcome email:', err));
+    try {
+      await sendWelcomeEmail(
+        {
+          name: employee.name,
+          email: employee.email,
+          gmailId: employee.gmailId,
+          designation: employee.designation,
+          ssoId: employee.ssoId,
+          officeName: employee.office?.name || employee.officeName,
+          sectionName: employee.section?.name || employee.sectionName,
+          systemRole: employee.systemRole,
+        },
+        defaultPassword
+      );
+    } catch (err) {
+      console.error('⚠️ Failed to dispatch welcome email:', err);
+    }
 
     res.status(201).json({
       ...employee,
