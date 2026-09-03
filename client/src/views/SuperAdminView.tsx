@@ -217,6 +217,16 @@ export const SuperAdminView: React.FC = () => {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      if (userForm.systemRole !== 'OFFICE_SUPER_ADMIN' && userForm.systemRole !== 'SUPER_ADMIN') {
+        if (!userForm.sectionId) {
+          const msg = 'Section/Group Head Name is mandatory. Please select a section/group head.';
+          setErrorMessage(msg);
+          showError(msg);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const payload: any = {
         name: userForm.name.trim(),
         email: userForm.email.trim(),
@@ -1699,21 +1709,30 @@ export const SuperAdminView: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Section/Group Head Name {userForm.systemRole === 'GROUP_HEAD' && <span className="text-indigo-600">(Group to Head)</span>}
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>
+                        Section/Group Head Name <span className="text-red-600 font-black">*</span>
+                        {userForm.systemRole === 'GROUP_HEAD' && <span className="text-indigo-600 font-semibold text-[11px] ml-1">(Group to Head)</span>}
+                      </span>
                     </label>
                     <select
                       value={userForm.sectionId}
                       onChange={(e) => setUserForm({ ...userForm, sectionId: e.target.value })}
                       className="w-full text-xs px-3 py-2 bg-slate-50 border rounded-xl cursor-pointer"
+                      required
                     >
-                      <option value="">Select Section/Group Head...</option>
+                      <option value="">Select Section/Group Head (Mandatory)...</option>
                       {sections
                         .filter((s) => s.officeId === (isOfficeSuperAdmin ? user?.officeId : userForm.officeId))
                         .map((s) => (
                           <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
                         ))}
                     </select>
+                    {sections.filter((s) => s.officeId === (isOfficeSuperAdmin ? user?.officeId : userForm.officeId)).length === 0 && (
+                      <p className="text-[10px] text-amber-700 mt-1 font-semibold">
+                        ⚠️ No Sections registered for this office yet. Please create one in Global Masters first.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
